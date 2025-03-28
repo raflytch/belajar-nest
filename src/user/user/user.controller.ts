@@ -27,7 +27,7 @@ export class UserController {
 
   @Get('/get-cookies')
   getCookies(@Req() request: Request): string {
-    const cookies = request.cookies['name'];
+    const cookies = request.cookies['name'] as string;
     return `Cookies: ${JSON.stringify(cookies)}`;
   }
 
@@ -51,10 +51,10 @@ export class UserController {
   }
 
   @Get('/hello')
-  async sayHello(
+  sayHello(
     @Query('first_name') firstName: string,
     @Query('last_name') lastName: string,
-  ): Promise<string> {
+  ): string {
     return `Hello ${firstName} ${lastName}`;
   }
 
