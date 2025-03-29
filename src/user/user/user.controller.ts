@@ -15,6 +15,17 @@ import { Request, Response } from 'express';
 
 @Controller('/api/users')
 export class UserController {
+  @Get('/view/hello')
+  getHelloView(@Query('name') name: string, @Res() response: Response) {
+    if (!name) {
+      return response.status(400).send('Name is required');
+    }
+
+    response.render('index.html', {
+      title: 'Template Example',
+      name: name,
+    });
+  }
   @Get('/set-cookie')
   setCookie(@Query('name') name: string, @Res() response: Response) {
     if (!name) {
