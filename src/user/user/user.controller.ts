@@ -1,4 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/require-await */
 import {
+  Body,
   Controller,
   Get,
   Header,
@@ -19,6 +23,13 @@ import { MailService } from '../mail/mail.service';
 import { UserRepository } from '../user-repository/user-repository';
 import { MemberService } from '../member/member.service';
 
+interface UserResponse<T> {
+  status: string;
+  message: string;
+  data?: T;
+  error?: string;
+}
+
 @Controller('/api/users')
 export class UserController {
   // rekomendasi pake constructor
@@ -37,7 +48,6 @@ export class UserController {
   @Get('/connection')
   async getConnection(): Promise<string> {
     const connectionName = this.connection.getName();
-    this.userRepository.save();
     this.mailService.send();
     this.emailService.send();
     console.log(this.memberService.getConnectionName());
@@ -45,6 +55,28 @@ export class UserController {
     return `Connection: ${connectionName}`;
   }
 
+  @Post('/create-user')
+  async createUser(
+    @Body() body: { firstName: string; lastName?: string },
+  ): Promise<UserResponse<{ firstName: string; lastName?: string }>> {
+    try {
+      await this.userRepository.save(body.firstName, body.lastName);
+      return {
+        status: 'success',
+        message: 'User created successfully',
+        data: {
+          firstName: body.firstName,
+          lastName: body.lastName,
+        },
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        message: 'Failed to create user',
+        error: error.message,
+      };
+    }
+  }
   @Get('/hello')
   sayHello(@Query('name') name: string): string {
     return this.userService.sayHello(name);
