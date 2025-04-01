@@ -7,14 +7,18 @@ import {
   Get,
   Header,
   HttpCode,
+  HttpException,
   HttpRedirectResponse,
   Inject,
   Param,
+  ParseIntPipe,
   Post,
   Query,
   Redirect,
   Req,
   Res,
+  UseFilters,
+  UsePipes,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UserService } from './user.service';
@@ -22,6 +26,12 @@ import { Connection } from '../connection/connection';
 import { MailService } from '../mail/mail.service';
 import { UserRepository } from '../user-repository/user-repository';
 import { MemberService } from '../member/member.service';
+import { ValidationFilter } from 'src/validation/validation.filter';
+import {
+  LoginUserRequest,
+  loginUserRequestValidation,
+} from 'src/model/login.model';
+import { ValidationPipe } from 'src/validation/validation.pipe';
 
 interface UserResponse<T> {
   status: string;
@@ -45,6 +55,17 @@ export class UserController {
   // @Optional()
   // private userService: UserService;
 
+  @UseFilters(ValidationFilter)
+  @Post('/login')
+  @UsePipes(new ValidationPipe(loginUserRequestValidation))
+  login(
+    @Query('name') name: string,
+    @Body()
+    request: LoginUserRequest,
+  ) {
+    return `Login with email: ${request.username} and password: ${request.password}`;
+  }
+
   @Get('/connection')
   async getConnection(): Promise<string> {
     const connectionName = this.connection.getName();
@@ -60,6 +81,26 @@ export class UserController {
     @Body() body: { firstName: string; lastName?: string },
   ): Promise<UserResponse<{ firstName: string; lastName?: string }>> {
     try {
+      if (!body.firstName) {
+        throw new HttpException(
+          {
+            status: 'error',
+            message: 'First name is required',
+          },
+          400,
+        );
+      }
+
+      if (body.firstName.length < 3) {
+        throw new HttpException(
+          {
+            status: 'error',
+            message: 'First name must be at least 3 characters long',
+          },
+          400,
+        );
+      }
+
       await this.userRepository.save(body.firstName, body.lastName);
       return {
         status: 'success',
@@ -70,11 +111,13 @@ export class UserController {
         },
       };
     } catch (error: any) {
-      return {
-        status: 'error',
-        message: 'Failed to create user',
-        error: error.message,
-      };
+      throw new HttpException(
+        {
+          status: 'error',
+          message: error.message,
+        },
+        error.status || 500,
+      );
     }
   }
   @Get('/hello')
@@ -129,13 +172,13 @@ export class UserController {
   }
 
   @Get('/:id')
-  getUser(@Param('id') id: string) {
-    if (!id) {
-      return 'ID is required';
+  getUser(@Param('id', ParseIntPipe) id: string): string {
+    if (isNaN(Number(id))) {
+      throw new HttpException('Invalid ID', 400);
     }
 
-    if (id === '1') {
-      return 'User with ID: 1 is Rafly Aziz Abdillah';
+    if (id === '0') {
+      throw new HttpException('User not found', 404);
     }
 
     return `User with ID: ${id}`;
