@@ -18,6 +18,7 @@ import {
   Req,
   Res,
   UseFilters,
+  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -32,6 +33,9 @@ import {
   loginUserRequestValidation,
 } from 'src/model/login.model';
 import { ValidationPipe } from 'src/validation/validation.pipe';
+import { TimeInterceptor } from 'src/time/time.interceptor';
+import { Auth } from 'src/auth/auth.decorator';
+import { User } from '@prisma/client';
 
 interface UserResponse<T> {
   status: string;
@@ -55,15 +59,38 @@ export class UserController {
   // @Optional()
   // private userService: UserService;
 
+  @Get('/current')
+  getCurrentUser(@Auth() user: User): Record<string, any> {
+    return {
+      status: 'success',
+      message: 'User retrieved successfully',
+      data: {
+        id: user.id,
+        name: user.first_name,
+        email: user.last_name,
+      },
+    };
+  }
+
   @UseFilters(ValidationFilter)
   @Post('/login')
   @UsePipes(new ValidationPipe(loginUserRequestValidation))
+  @Header('Content-Type', 'application/json')
+  @UseInterceptors(TimeInterceptor)
   login(
     @Query('name') name: string,
     @Body()
     request: LoginUserRequest,
   ) {
-    return `Login with email: ${request.username} and password: ${request.password}`;
+    return {
+      status: 'success',
+      message: 'User logged in successfully',
+      data: {
+        name,
+        email: request.username,
+        password: request.password,
+      },
+    };
   }
 
   @Get('/connection')
