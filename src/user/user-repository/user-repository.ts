@@ -13,12 +13,17 @@ export class UserRepository {
     this.logger.info('UserRepository initialized');
   }
 
-  async save(firstName: string, lastName?: string): Promise<User> {
+  async save(
+    firstName: string,
+    lastName?: string,
+    role?: string,
+  ): Promise<User> {
     this.logger.info(`Saving user: ${firstName} ${lastName}`);
     return this.prismaService.user.create({
       data: {
         first_name: firstName,
         last_name: lastName,
+        role: role,
       },
     });
   }

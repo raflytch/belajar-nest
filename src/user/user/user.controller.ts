@@ -18,6 +18,7 @@ import {
   Req,
   Res,
   UseFilters,
+  UseGuards,
   UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
@@ -36,6 +37,8 @@ import { ValidationPipe } from 'src/validation/validation.pipe';
 import { TimeInterceptor } from 'src/time/time.interceptor';
 import { Auth } from 'src/auth/auth.decorator';
 import { User } from '@prisma/client';
+import { RoleGuard } from 'src/role/role.guard';
+import { Roles } from 'src/role/role.decorator';
 
 interface UserResponse<T> {
   status: string;
@@ -60,6 +63,7 @@ export class UserController {
   // private userService: UserService;
 
   @Get('/current')
+  @Roles(['admin'])
   getCurrentUser(@Auth() user: User): Record<string, any> {
     return {
       status: 'success',
@@ -105,8 +109,10 @@ export class UserController {
 
   @Post('/create-user')
   async createUser(
-    @Body() body: { firstName: string; lastName?: string },
-  ): Promise<UserResponse<{ firstName: string; lastName?: string }>> {
+    @Body() body: { firstName: string; lastName?: string; role?: string },
+  ): Promise<
+    UserResponse<{ firstName: string; lastName?: string; role?: string }>
+  > {
     try {
       if (!body.firstName) {
         throw new HttpException(
@@ -128,13 +134,14 @@ export class UserController {
         );
       }
 
-      await this.userRepository.save(body.firstName, body.lastName);
+      await this.userRepository.save(body.firstName, body.lastName, body.role);
       return {
         status: 'success',
         message: 'User created successfully',
         data: {
           firstName: body.firstName,
           lastName: body.lastName,
+          role: body.role,
         },
       };
     } catch (error: any) {

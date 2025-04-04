@@ -22,6 +22,8 @@ async function bootstrap() {
   app.engine('html', mustache());
 
   const configService = app.get(ConfigService);
+
+  app.enableShutdownHooks();
   await app.listen(configService.get('PORT') || 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
